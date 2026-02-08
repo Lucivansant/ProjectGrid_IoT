@@ -1,0 +1,13 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Isometric cube logo -->
+  <g transform="translate(64, 64)">
+    <!-- Top face (dark gray) -->
+    <path d="M 0,-28 L 32,-14 L 0,0 L -32,-14 Z" fill="#4a4a4a" stroke="#ffffff" stroke-width="2" stroke-linejoin="miter"/>
+    
+    <!-- Left face (black) -->
+    <path d="M -32,-14 L -32,30 L 0,44 L 0,0 Z" fill="#000000" stroke="#ffffff" stroke-width="2" stroke-linejoin="miter"/>
+    
+    <!-- Right face (medium gray) -->
+    <path d="M 0,0 L 0,44 L 32,30 L 32,-14 Z" fill="#808080" stroke="#ffffff" stroke-width="2" stroke-linejoin="miter"/>
+  </g>
+</svg>

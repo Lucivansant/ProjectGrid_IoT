@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root {
+  /* ProjectGrid Brand Colors - Based on Logo */
+  --pg-black: #000000;
+  --pg-dark-gray: #4A4A4A;
+  --pg-medium-gray: #8A8A8A;
+  --pg-light-gray: #E5E5E5;
+  
+  /* Accent Colors */
+  --pg-primary: #2563eb;
+  --pg-primary-hover: #1d4ed8;
+  --pg-accent: #4A4A4A;
+  
+  /* Gradients */
+  --pg-gradient-dark: linear-gradient(135deg, #000000 0%, #4A4A4A 100%);
+  --pg-gradient-light: linear-gradient(135deg, #8A8A8A 0%, #E5E5E5 100%);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
