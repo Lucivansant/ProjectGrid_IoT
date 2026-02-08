@@ -1,0 +1,4 @@
+name = "projectgrid-iot"
+compatibility_date = "2024-02-08"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
