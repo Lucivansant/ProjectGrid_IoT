@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 // Interface compartilhada
 export interface BrokerConfig {
@@ -13,33 +12,30 @@ export interface BrokerConfig {
   user_id: string;
 }
 
-// Cliente Supabase (pode ser extraído para um arquivo de config se preferir)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Mock storage local para brokers
+const getStoredBrokers = (): BrokerConfig[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem('broker_configs');
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveStoredBrokers = (brokers: BrokerConfig[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('broker_configs', JSON.stringify(brokers));
+};
 
 export function useBrokerConfigs() {
   const [brokers, setBrokers] = useState<BrokerConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar Brokers do Usuário
+  // Carregar Brokers do localStorage
   const loadBrokers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data, error } = await supabase
-        .from("broker_configs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setBrokers(data as BrokerConfig[]);
-      return data as BrokerConfig[];
+      const storedBrokers = getStoredBrokers();
+      setBrokers(storedBrokers);
+      return storedBrokers;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao carregar brokers";
       setError(msg);
@@ -55,34 +51,31 @@ export function useBrokerConfigs() {
     setLoading(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const payload = {
-        name: data.name,
-        broker_url: data.broker_url,
-        username: data.username,
-        password: data.password,
-        port: Number(data.port),
-        use_ssl: data.use_ssl,
-        user_id: user.id
+      const currentBrokers = getStoredBrokers();
+      
+      const payload: BrokerConfig = {
+        id: data.id || `broker_${Date.now()}`,
+        name: data.name || null,
+        broker_url: data.broker_url || '',
+        username: data.username || null,
+        password: data.password || null,
+        port: Number(data.port) || 1883,
+        use_ssl: Boolean(data.use_ssl),
+        user_id: 'demo-user'
       };
 
       if (data.id) {
         // Update
-        const { error } = await supabase
-          .from("broker_configs")
-          .update(payload)
-          .eq("id", data.id);
-        if (error) throw error;
+        const index = currentBrokers.findIndex(b => b.id === data.id);
+        if (index !== -1) {
+          currentBrokers[index] = payload;
+        }
       } else {
         // Insert
-        const { error } = await supabase
-          .from("broker_configs")
-          .insert([payload]);
-        if (error) throw error;
+        currentBrokers.push(payload);
       }
 
+      saveStoredBrokers(currentBrokers);
       await loadBrokers(); // Recarrega lista
       return true;
     } catch (err: unknown) {
@@ -95,26 +88,12 @@ export function useBrokerConfigs() {
   };
 
   // Deletar
-  // Deletar
   const deleteBroker = async (id: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado para exclusão");
-
-      console.log(`🗑️ Tentando excluir broker ${id} do usuário ${user.id}`);
-
-      const { error } = await supabase
-        .from("broker_configs")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", user.id); // Garante segurança extra e RLS match
+      const currentBrokers = getStoredBrokers();
+      const filteredBrokers = currentBrokers.filter(b => b.id !== id);
       
-      if (error) {
-        console.error("❌ Erro Supabase Delete:", error);
-        throw error;
-      };
-
-      console.log("✅ Broker excluído no banco.");
+      saveStoredBrokers(filteredBrokers);
       await loadBrokers(); // Recarrega lista oficial
       return true;
     } catch (err: unknown) {

@@ -1,5 +1,13 @@
 import Image from "next/image";
-import { User } from "@supabase/supabase-js";
+
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
 
 interface HeaderProps {
   user: User | null;

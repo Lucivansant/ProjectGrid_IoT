@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMqtt } from "../_lib/hooks/useMqtt";
-import { createClient, User } from "@supabase/supabase-js";
-import { AuthStorage } from "@/app/login/autentica/AuthStorage";
+
 
 // Importando Componentes Refatorados
 import { Header } from "./Components/Header/Header";
@@ -16,7 +15,7 @@ import { ReliabilityGauge } from "./Components/Stats/ReliabilityGauge";
 export default function Dashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("dashboard");
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>({ id: "demo-user", email: "demo@example.com" });
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -83,39 +82,24 @@ export default function Dashboard() {
     }
   };
 
-  // Autenticação e Carregamento de Configurações
+  // Carregamento de Configurações (sem autenticação)
   useEffect(() => {
     const initData = async () => {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
+      // Dados mock de brokers para demonstração
+      const mockBrokers = [
+        {
+          id: "demo-broker-1",
+          name: "Broker Demo",
+          broker_url: "broker.emqx.io",
+          port: "8084",
+          username: "",
+          password: ""
+        }
+      ];
 
-      // 1. Verifica Usuário
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (error || !user) {
-        console.log("Usuário não autenticado, redirecionando...");
-        router.push("/login");
-        return;
-      }
-
-      setUser(user);
-
-      // 2. Busca TODOS os Brokers do usuário
-      const { data: brokersList } = await supabase
-        .from("broker_configs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-
-      if (brokersList && brokersList.length > 0) {
-        setBrokers(brokersList);
-        // Seleciona o primeiro por padrão
-        handleBrokerChange(brokersList[0].id, brokersList);
+      setBrokers(mockBrokers);
+      if (mockBrokers.length > 0) {
+        handleBrokerChange(mockBrokers[0].id, mockBrokers);
       }
 
       setLoading(false);
@@ -123,16 +107,10 @@ export default function Dashboard() {
 
     initData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, []);
 
   // Handler de Logout
-  const handleLogout = async () => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-    await supabase.auth.signOut();
-    AuthStorage.clear();
+  const handleLogout = () => {
     localStorage.clear();
     window.location.href = "/login";
   };

@@ -43,10 +43,10 @@ export default function Home() {
               Entrar
             </a>
             <a
-              href="/signup"
+              href="/login"
               className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
-              Começar Agora
+              Entrar
             </a>
           </nav>
 
@@ -113,11 +113,11 @@ export default function Home() {
                 Entrar
               </a>
               <a
-                href="/signup"
+                href="/login"
                 className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center font-medium hover:bg-gray-800"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Começar Agora
+                Entrar
               </a>
             </div>
           </div>
@@ -288,10 +288,10 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <a
-                  href="/signup"
+                  href="/login"
                   className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors text-center"
                 >
-                  Teste Grátis
+                  Entrar no Sistema
                 </a>
                 <a
                   href="#demo"
