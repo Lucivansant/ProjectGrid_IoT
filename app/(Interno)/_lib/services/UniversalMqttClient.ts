@@ -8,7 +8,6 @@ export interface MqttConnectionConfig {
 }
 
 // Tipo seguro para valores vindos de JSON desconhecido
-// Tipo seguro para valores vindos de JSON desconhecido
 export type JsonValue = string | number | boolean | null | undefined | { [key: string]: JsonValue } | JsonValue[];
 
 export interface SensorData {
@@ -70,7 +69,7 @@ export class UniversalMqttClient {
             topic: topic,
             message: parsedData
           };
-        } catch (error) {
+        } catch {
           // Fallback para String Raw (Não JSON)
           safeData = {
             timestamp: Date.now(),
@@ -101,14 +100,21 @@ export class UniversalMqttClient {
   }
 
   subscribe(topic: string): void {
-    if (this.client) {
-      this.client.subscribe(topic, (err) => {
-        if (err) {
-          console.error(`Erro ao assinar ${topic}:`, err);
-        } else {
-          console.log(`👂 Ouvindo tópico: ${topic}`);
-        }
-      });
+    if (this.client && this.client.connected) {
+      try {
+        this.client.subscribe(topic, (err, granted) => {
+          if (err) {
+            console.error(`❌ Erro ao assinar ${topic}:`, err);
+            // Evita crash se for ErrorWithSubackPacket
+            const errorMsg = err.message || "Erro desconhecido na subscrição";
+            this.errorHandlers.forEach(h => h(new Error(`Sub: ${errorMsg}`)));
+          } else {
+            console.log(`👂 Ouvindo tópico: ${topic}`, granted);
+          }
+        });
+      } catch (e) {
+        console.error("Falha ao chamar subscribe:", e);
+      }
     }
   }
 

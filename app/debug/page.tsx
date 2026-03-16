@@ -1,4 +1,3 @@
-export const runtime = "edge";
 
 export default function DebugPage() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

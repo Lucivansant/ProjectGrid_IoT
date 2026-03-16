@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Força o runtime edge para compatibilidade com Cloudflare Pages
-export const runtime = "edge";
+// Força o runtime edge para compatibilidade com Cloudflare Pages (Removido por incompatibilidade com Node.js/SQLite/MQTT)
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ProjectGrid - Plataforma IoT as a Service",
   description:
-    "Conecte seus dispositivos IoT em minutos. Infraestrutura profissional para ESP32, Arduino e projetos IoT com HTTPS seguro e dados em JSON.",
+    "Seu dashboard IoT as a Service. Conecte seu ESP32 e projetos IoT através de Brokers MQTT e WebSockets de maneira unificada e em tempo real.",
   icons: {
     icon: "/icon.svg",
   },

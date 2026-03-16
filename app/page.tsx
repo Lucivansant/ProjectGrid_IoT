@@ -278,8 +278,8 @@ export default function Home() {
               <div className="inline-block px-4 py-1.5 bg-gray-100 text-gray-800 rounded-full text-sm font-medium mb-6">
                 Plataforma IoT as a Service
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
-                Conecte seus dispositivos IoT em minutos, não em dias
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-[1.15] mb-6 tracking-tight">
+                Monitore sua infraestrutura IoT com alta performance
               </h1>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
                 Infraestrutura profissional pronta para uso. Sem configurações
@@ -301,11 +301,11 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Destaque HTTPS e JSON */}
-              <div className="bg-linear-to-r from-gray-50 to-gray-100 border border-gray-300 rounded-lg p-3 mb-4">
-                <div className="flex items-start gap-2">
+              {/* Destaque MQTT e Estatísticas */}
+              <div className="bg-linear-to-r from-gray-50 to-gray-100 border border-gray-300 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-3 mb-4">
                   <svg
-                    className="w-5 h-5 text-gray-700 shrink-0 mt-0.5"
+                    className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -319,13 +319,27 @@ export default function Home() {
                   </svg>
                   <div>
                     <p className="text-sm font-semibold text-gray-900 mb-1">
-                      Protocolo HTTPS Seguro + Dados em JSON
+                      Broker MQTT Integrado (Zero Config)
                     </p>
-                    <p className="text-sm text-gray-600">
-                      Comunicação criptografada end-to-end e formato JSON
-                      nativo. Compatível com qualquer linguagem e biblioteca
-                      HTTP.
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Conectividade MQTT/WSS nativa direto do seu hardware. Visualize fluxos de telemetria do seu ESP32, Arduino ou CLP sem depender de nuvem de terceiros.
                     </p>
+                  </div>
+                </div>
+                
+                {/* Micro-Estatísticas */}
+                <div className="grid grid-cols-3 gap-2 border-t border-gray-200 pt-3">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">15k+</p>
+                    <p className="text-xs text-gray-500 font-medium">Conexões/Nó</p>
+                  </div>
+                  <div className="text-center border-l border-r border-gray-200">
+                    <p className="text-xl font-bold text-gray-900">&lt;5ms</p>
+                    <p className="text-xs text-gray-500 font-medium">Latência Média</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">100%</p>
+                    <p className="text-xs text-gray-500 font-medium">Autossuficiente</p>
                   </div>
                 </div>
               </div>
@@ -390,7 +404,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 - HTTPS */}
+            {/* Feature 1 - MQTT/WSS */}
             <div className="bg-white p-6 rounded-xl border border-gray-200">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <svg
@@ -408,11 +422,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                HTTPS Nativo
+                Conexão WSS Segura
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Comunicação 100% criptografada com certificado SSL/TLS. Seus
-                dados trafegam seguros entre ESP32 e servidor.
+                Navegue com tranquilidade. Suporte nativo à conexões MQTT via WebSockets (SSL/TLS) para tráfego simultâneo e seguro entre seus Brokers e o Painel.
               </p>
             </div>
 
@@ -434,11 +447,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Formato JSON
+                Payload JSON
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Envie e receba dados em JSON puro. Leve, universal e compatível
-                com ESP32, Python, Node.js e qualquer linguagem.
+                Interpretação automática de Payload em formato JSON puro. O Grid reconhece as chaves numéricas do seu ESP32 mapeando os limites automaticamente.
               </p>
             </div>
 
@@ -486,11 +498,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Zero Configuração
+                Conexão Simplificada
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Sem VPS, sem certificados SSL, sem dor de cabeça. Copie seu
-                endpoint HTTPS e comece a enviar dados JSON.
+                Esqueça deploys difíceis. Utilize o nosso potente servidor interno ou conecte brokers de terceiros como HiveMQ, AWS e EMQX informando apenas a URL.
               </p>
             </div>
 
@@ -512,11 +523,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Infraestrutura Escalável
+                Arquitetura Escalável
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                De 1 a 10.000 dispositivos. Nossa arquitetura serverless escala
-                automaticamente conforme sua necessidade.
+                Cresça de forma inteligente. Motor multi-thread suportando de 1 a 15.000+ conexões simultâneas ultra-rápidas por núcleo instalado.
               </p>
             </div>
 

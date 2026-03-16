@@ -1,43 +1,27 @@
 import { useState, useCallback } from "react";
+import { fetchBrokersPublic, saveBrokerServer, deleteBrokerServer, BrokerConfigPublic } from "../actions/brokerActions";
 
-// Interface compartilhada
-export interface BrokerConfig {
-  id: string;
-  name: string | null;
-  broker_url: string;
+// Interface completa (interna para o hook, mas exportada para tipos)
+export interface BrokerConfig extends BrokerConfigPublic {
   username?: string | null;
   password?: string | null;
-  port: number;
-  use_ssl: boolean;
-  user_id: string;
 }
 
-// Mock storage local para brokers
-const getStoredBrokers = (): BrokerConfig[] => {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem('broker_configs');
-  return stored ? JSON.parse(stored) : [];
-};
-
-const saveStoredBrokers = (brokers: BrokerConfig[]) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('broker_configs', JSON.stringify(brokers));
-};
-
-export function useBrokerConfigs() {
-  const [brokers, setBrokers] = useState<BrokerConfig[]>([]);
+export function useBrokerConfigs(initialData: BrokerConfigPublic[] = []) {
+  const [brokers, setBrokers] = useState<BrokerConfigPublic[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar Brokers do localStorage
+  // Carregar Brokers do banco de dados (SQLite) - Versão Protegida
   const loadBrokers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const storedBrokers = getStoredBrokers();
-      setBrokers(storedBrokers);
-      return storedBrokers;
+      const fetchedBrokers = await fetchBrokersPublic();
+      setBrokers(fetchedBrokers);
+      return fetchedBrokers;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao carregar brokers";
+      const msg = err instanceof Error ? err.message : "Erro ao carregar brokers do SQLite";
       setError(msg);
       console.error(msg);
       return [];
@@ -51,35 +35,15 @@ export function useBrokerConfigs() {
     setLoading(true);
     setError(null);
     try {
-      const currentBrokers = getStoredBrokers();
-      
-      const payload: BrokerConfig = {
-        id: data.id || `broker_${Date.now()}`,
-        name: data.name || null,
-        broker_url: data.broker_url || '',
-        username: data.username || null,
-        password: data.password || null,
-        port: Number(data.port) || 1883,
-        use_ssl: Boolean(data.use_ssl),
-        user_id: 'demo-user'
-      };
-
-      if (data.id) {
-        // Update
-        const index = currentBrokers.findIndex(b => b.id === data.id);
-        if (index !== -1) {
-          currentBrokers[index] = payload;
-        }
+      const success = await saveBrokerServer(data);
+      if (success) {
+        await loadBrokers(); // Recarrega lista
       } else {
-        // Insert
-        currentBrokers.push(payload);
+        setError("Erro ao salvar broker no SQLite");
       }
-
-      saveStoredBrokers(currentBrokers);
-      await loadBrokers(); // Recarrega lista
-      return true;
+      return success;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao salvar broker";
+      const msg = err instanceof Error ? err.message : "Erro ao salvar broker no SQLite";
       setError(msg);
       return false;
     } finally {
@@ -90,14 +54,15 @@ export function useBrokerConfigs() {
   // Deletar
   const deleteBroker = async (id: string) => {
     try {
-      const currentBrokers = getStoredBrokers();
-      const filteredBrokers = currentBrokers.filter(b => b.id !== id);
-      
-      saveStoredBrokers(filteredBrokers);
-      await loadBrokers(); // Recarrega lista oficial
-      return true;
+      const success = await deleteBrokerServer(id);
+      if (success) {
+        await loadBrokers(); // Recarrega lista oficial
+      } else {
+        setError("Erro ao deletar broker do SQLite");
+      }
+      return success;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao deletar broker";
+      const msg = err instanceof Error ? err.message : "Erro ao deletar broker no SQLite";
       setError(msg);
       console.error(msg);
       return false;

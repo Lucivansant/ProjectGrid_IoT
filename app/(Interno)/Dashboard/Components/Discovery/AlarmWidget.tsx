@@ -12,9 +12,9 @@ interface AlarmWidgetProps {
 interface ActiveAlarm {
   topic: string;
   metric: string;
-  value: number;
-  limit: number;
-  type: "min" | "max";
+  value: number | string;
+  limit: number | string;
+  type: "min" | "max" | "exact";
 }
 
 export function AlarmWidget({ devices }: AlarmWidgetProps) {
@@ -41,22 +41,42 @@ export function AlarmWidget({ devices }: AlarmWidgetProps) {
         const limit = config.limits[key];
         if (!limit) continue;
 
-        if (limit.max !== undefined && val > limit.max) {
-          results.push({
-            topic: device.topic,
-            metric: key,
-            value: val,
-            limit: limit.max,
-            type: "max",
-          });
+        const isNumericLike =
+          typeof val === "number" ||
+          (typeof val === "string" && !isNaN(parseFloat(val)));
+        const parsedNumeric = isNumericLike ? parseFloat(String(val)) : null;
+
+        if (isNumericLike && parsedNumeric !== null) {
+          if (limit.max !== undefined && parsedNumeric > limit.max) {
+            results.push({
+              topic: device.topic,
+              metric: key,
+              value: String(val),
+              limit: limit.max,
+              type: "max",
+            });
+          }
+          if (limit.min !== undefined && parsedNumeric < limit.min) {
+            results.push({
+              topic: device.topic,
+              metric: key,
+              value: String(val),
+              limit: limit.min,
+              type: "min",
+            });
+          }
         }
-        if (limit.min !== undefined && val < limit.min) {
+
+        if (
+          limit.exactMatch !== undefined &&
+          String(val).toLowerCase() === limit.exactMatch.toLowerCase()
+        ) {
           results.push({
             topic: device.topic,
             metric: key,
-            value: val,
-            limit: limit.min,
-            type: "min",
+            value: String(val),
+            limit: limit.exactMatch,
+            type: "exact",
           });
         }
       }
@@ -174,7 +194,11 @@ export function AlarmWidget({ devices }: AlarmWidgetProps) {
                               {alarm.value}
                             </span>
                             <span className="text-red-400 opacity-75 text-[9px]">
-                              {alarm.type === "max" ? ">" : "<"}
+                              {alarm.type === "max"
+                                ? ">"
+                                : alarm.type === "min"
+                                  ? "<"
+                                  : "=="}
                               {alarm.limit}
                             </span>
                           </span>

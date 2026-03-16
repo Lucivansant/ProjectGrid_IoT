@@ -24,11 +24,11 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
     if (typeof telemetry !== "object") return [];
 
     return Object.keys(telemetry).filter((key) => {
-      const val = telemetry[key];
+      // Ignora chaves internas estruturais
       return (
-        typeof val === "number" &&
-        !key.includes("timestamp") &&
-        !key.includes("id")
+        !key.toLowerCase().includes("timestamp") &&
+        key.toLowerCase() !== "id" &&
+        key !== "_id"
       );
     });
   }, [lastPayload]);
@@ -38,8 +38,7 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
     return await db.device_configs.get(topic);
   }, [topic]);
 
-  // 3. Função para salvar limites
-  const handleSaveLimit = async (
+  const handleSaveLimitNumeric = async (
     key: string,
     type: "min" | "max",
     value: string,
@@ -54,6 +53,27 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
       [key]: {
         ...keyLimits,
         [type]: numValue,
+      },
+    };
+
+    await db.device_configs.put({
+      topic,
+      limits: newLimits,
+      alias: config?.alias,
+    });
+  };
+
+  const handleSaveLimitText = async (key: string, value: string) => {
+    const textValue = value.trim() === "" ? undefined : value.trim();
+
+    const currentLimits = config?.limits || {};
+    const keyLimits = currentLimits[key] || {};
+
+    const newLimits = {
+      ...currentLimits,
+      [key]: {
+        ...keyLimits,
+        exactMatch: textValue,
       },
     };
 
@@ -87,7 +107,6 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
 
         {availableKeys.map((key) => {
           const limits = config?.limits?.[key] || {};
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const telemetry =
             lastPayload?.telemetry ||
             lastPayload?.sensores ||
@@ -95,9 +114,24 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
             lastPayload;
           const currentsValue = telemetry?.[key];
 
-          const isHigh = limits.max !== undefined && currentsValue > limits.max;
-          const isLow = limits.min !== undefined && currentsValue < limits.min;
-          const isAlarm = isHigh || isLow;
+          const isNumericLike =
+            typeof currentsValue === "number" ||
+            (typeof currentsValue === "string" && !isNaN(parseFloat(currentsValue)));
+
+          const parsedNumeric = isNumericLike ? parseFloat(String(currentsValue)) : null;
+
+          let isAlarm = false;
+
+          if (isNumericLike && parsedNumeric !== null) {
+            const isHigh = limits.max !== undefined && parsedNumeric > limits.max;
+            const isLow = limits.min !== undefined && parsedNumeric < limits.min;
+            isAlarm = isHigh || isLow;
+          } else {
+            const isMatch =
+              limits.exactMatch !== undefined &&
+              String(currentsValue).toLowerCase() === limits.exactMatch.toLowerCase();
+            isAlarm = isMatch;
+          }
 
           return (
             <div
@@ -111,36 +145,51 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
                 <span
                   className={`text-xs font-mono px-2 py-0.5 rounded ${isAlarm ? "bg-red-200 text-red-700 font-bold" : "bg-gray-100 text-gray-600"}`}
                 >
-                  Atual: {currentsValue}
+                  Atual: {String(currentsValue)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {isNumericLike ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">
+                      Mínimo
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      defaultValue={limits.min ?? ""}
+                      onBlur={(e) => handleSaveLimitNumeric(key, "min", e.target.value)}
+                      className="w-full text-sm border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">
+                      Máximo
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      defaultValue={limits.max ?? ""}
+                      onBlur={(e) => handleSaveLimitNumeric(key, "max", e.target.value)}
+                      className="w-full text-sm border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">
-                    Mínimo
+                    Alertar Se Igual A (Texto)
                   </label>
                   <input
-                    type="number"
-                    placeholder="Min"
-                    defaultValue={limits.min ?? ""}
-                    onBlur={(e) => handleSaveLimit(key, "min", e.target.value)}
+                    type="text"
+                    placeholder="Ex: offline, erro, false"
+                    defaultValue={limits.exactMatch ?? ""}
+                    onBlur={(e) => handleSaveLimitText(key, e.target.value)}
                     className="w-full text-sm border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] text-gray-500 uppercase tracking-wide mb-1">
-                    Máximo
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    defaultValue={limits.max ?? ""}
-                    onBlur={(e) => handleSaveLimit(key, "max", e.target.value)}
-                    className="w-full text-sm border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+              )}
             </div>
           );
         })}

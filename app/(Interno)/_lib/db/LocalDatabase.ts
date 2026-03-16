@@ -10,7 +10,7 @@ export interface MqttMessageRecord {
 
 export interface DeviceConfig {
   topic: string;
-  limits: Record<string, { max?: number; min?: number }>;
+  limits: Record<string, { max?: number; min?: number; exactMatch?: string }>;
   alias?: string; // Nome amigável opcional
 }
 

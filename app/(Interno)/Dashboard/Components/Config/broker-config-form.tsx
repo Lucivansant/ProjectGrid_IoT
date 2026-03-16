@@ -5,6 +5,7 @@ import {
   useBrokerConfigs,
   BrokerConfig,
 } from "../../../_lib/hooks/useBrokerConfigs";
+import { BrokerConfigPublic, getBrokerSecret } from "../../../_lib/actions/brokerActions";
 
 export function BrokerConfigForm() {
   const {
@@ -47,17 +48,25 @@ export function BrokerConfigForm() {
   // (Erro removido: sincronização via render direto)
 
   // Preencher formulário ao clicar em editar
-  const handleEdit = (broker: BrokerConfig) => {
+  const handleEdit = async (broker: BrokerConfigPublic) => {
     setSelectedId(broker.id);
-    setFormData({
-      name: broker.name,
-      broker_url: broker.broker_url,
-      username: broker.username,
-      password: broker.password,
-      port: broker.port,
-      use_ssl: broker.use_ssl,
-    });
     setUiMsg(null);
+    
+    // Mostra loading local se necessário, ou apenas busca o secret
+    try {
+      const secrets = await getBrokerSecret(broker.id);
+      setFormData({
+        name: broker.name,
+        broker_url: broker.broker_url,
+        username: secrets?.username || "",
+        password: secrets?.password || "",
+        port: broker.port,
+        use_ssl: broker.use_ssl,
+      });
+    } catch (err) {
+      console.error("Erro ao carregar segredos:", err);
+      setUiMsg({ type: "error", text: "Erro ao carregar dados sensíveis." });
+    }
   };
 
   const handleNew = () => {
@@ -223,7 +232,28 @@ export function BrokerConfigForm() {
 
         {/* Botões de Ajuda (Tutoriais) */}
         {!selectedId && (
-          <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                setActiveTutorial({
+                  title: "ProjectGrid Embutido (Local)",
+                  description:
+                    "Você sabia que este software já roda o próprio servidor MQTT? Ao usar esta configuração, seus dispositivos conectam diretamente nesta máquina / VPS sem precisarem da internet externa (Nuvem).",
+                  link: "",
+                  configSnippet:
+                    "Para o ESP32 (Wi-Fi): TCP Porta 1885\n(Aponte o IP do ESP32 para o IP deste computador).\n\nPara este Painel: \nURL: ws://localhost:8885/mqtt\nPorta: 8885\nSSL: Desativado",
+                })
+              }
+              className="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition-all gap-2 group"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                <Server size={18} />
+              </div>
+              <div className="text-xs font-semibold text-gray-700">
+                Broker Local
+              </div>
+            </button>
             <button
               type="button"
               onClick={() =>

@@ -36,8 +36,12 @@ export function useMqtt(topic: string, userConfig?: MqttConnectionConfig) {
       if (status) {
         setConnectionError(null);
         // Assina tópico assim que conectar
-        // Nota: Se já estiver assinado por outro componente, o broker ignora, sem problemas.
-        client.subscribe(topic);
+        // Nota: Um pequeno delay evita race conditions em algumas versões do mqtt.js (v5)
+        setTimeout(() => {
+          if (clientRef.current) {
+            client.subscribe(topic);
+          }
+        }, 100);
       }
     };
 

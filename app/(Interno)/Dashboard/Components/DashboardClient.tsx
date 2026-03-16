@@ -1,0 +1,226 @@
+"use client";
+import React, { useState, useEffect, useCallback } from "react";
+import { useMqtt } from "../../_lib/hooks/useMqtt";
+import { useBrokerConfigs } from "../../_lib/hooks/useBrokerConfigs";
+import { BrokerConfigPublic, getBrokerSecret } from "../../_lib/actions/brokerActions";
+
+// Importando Componentes Refatorados
+import { Header } from "./Header/Header";
+import { Sidebar } from "./Sidebar/Sidebar";
+import { StatsGrid } from "./Stats/StatsGrid";
+import { BrokerConfigForm } from "./Config/broker-config-form";
+import { DiscoveryGrid } from "./Discovery/DiscoveryGrid";
+import { ReliabilityGauge } from "./Stats/ReliabilityGauge";
+
+interface DashboardClientProps {
+  initialBrokers: BrokerConfigPublic[];
+}
+
+export function DashboardClient({ initialBrokers }: DashboardClientProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState("dashboard");
+  const [user] = useState<{ id: string; email?: string } | null>({ id: "demo-user", email: "demo@example.com" });
+  const [loading, setLoading] = useState(false);
+  
+  const { brokers } = useBrokerConfigs(initialBrokers);
+  const [selectedBrokerId, setSelectedBrokerId] = useState<string>("");
+
+  // Conexão MQTT Ativa
+  const [mqttConnectConfig, setMqttConnectConfig] = useState<{
+    brokerUrl: string;
+    username?: string;
+    password?: string;
+    clientId: string;
+  } | undefined>(undefined);
+
+  // Estado para controlar qual tópico estamos ouvindo
+  const [activeTopic] = useState("projectgrid/#");
+
+  // Hook MQTT
+  const {
+    isConnected,
+    connectionError,
+    data: mqttData,
+    publishMessage,
+  } = useMqtt(activeTopic, mqttConnectConfig);
+
+  // Função para trocar de Broker - Agora carrega segredos sob demanda
+  const handleBrokerChange = useCallback(async (brokerId: string, list: BrokerConfigPublic[] = brokers) => {
+    const selected = list.find((b) => b.id === brokerId);
+    if (selected) {
+      setSelectedBrokerId(brokerId);
+      setLoading(true);
+
+      try {
+        // Busca segredos apenas quando for conectar
+        const secrets = await getBrokerSecret(brokerId);
+
+        // Normalização Robusta da URL
+        let url = selected.broker_url.trim();
+        if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
+            const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+            url = `${isLocal ? "ws" : "wss"}://${url}`;
+        }
+        const portPattern = /:\d+(\/|$)/;
+        if (!portPattern.test(url) && selected.port) {
+            if (url.endsWith("/")) url = url.slice(0, -1);
+            url = `${url}:${selected.port}`;
+        }
+        if (!url.includes("/mqtt") && !url.endsWith("/mqtt")) {
+            if (!url.endsWith("/")) url += "/";
+            url += "mqtt";
+        }
+
+        setMqttConnectConfig({
+            brokerUrl: url,
+            username: secrets?.username ?? undefined,
+            password: secrets?.password ?? undefined,
+            clientId: `projectgrid_${brokerId.split("-")[0] || "web"}`,
+        });
+      } catch (err) {
+        console.error("Erro ao obter credenciais:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [brokers]);
+
+  // Carregamento inicial automático
+  useEffect(() => {
+    if (brokers.length > 0 && !selectedBrokerId && !mqttConnectConfig) {
+      handleBrokerChange(brokers[0].id, brokers);
+    }
+  }, [brokers, selectedBrokerId, mqttConnectConfig, handleBrokerChange]);
+
+  // Handler de Logout
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
+
+  const statsData = [
+    {
+      title: "Status do Broker",
+      value: isConnected ? "Online" : connectionError ? "Falha" : "Conectando...",
+      change: isConnected ? "Estável" : connectionError || "...",
+      changeType: (isConnected ? "positive" : connectionError ? "negative" : "warning") as "positive" | "negative" | "warning",
+      icon: "M13 10V3L4 14h7v7l9-11h-7z", // Raio
+      color: (isConnected ? "green" : connectionError ? "red" : "gray") as "green" | "red" | "gray",
+    },
+    {
+      title: "Última Leitura",
+      value: mqttData ? new Date(mqttData.timestamp).toLocaleTimeString() : "--:--",
+      change: "Tempo Real",
+      changeType: "positive",
+      icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", // Relógio
+      color: "blue",
+    },
+    {
+      title: "Confiabilidade",
+      customContent: (
+        <ReliabilityGauge
+          isConnected={!!isConnected}
+          lastActivity={mqttData?.timestamp || 0}
+        />
+      ),
+    },
+  ];
+
+  const renderContent = () => {
+    switch (activeItem) {
+      case "dashboard":
+        return (
+          <>
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">Monitoramento em Tempo Real</h1>
+                <p className="text-sm text-gray-600">Visualize os dados brutos chegando do seu dispositivo MQTT.</p>
+              </div>
+
+              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-2">Broker:</span>
+                <select
+                  value={selectedBrokerId}
+                  onChange={(e) => handleBrokerChange(e.target.value)}
+                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none min-w-[200px]"
+                >
+                  {brokers.map((broker) => (
+                    <option key={broker.id} value={broker.id}>
+                      {broker.name || "Sem Nome"} ({broker.broker_url.replace(/^wss?:\/\//, "").split("/")[0]})
+                    </option>
+                  ))}
+                  {brokers.length === 0 && <option value="">Nenhum Broker Configurado</option>}
+                </select>
+
+                <button
+                  type="button"
+                  disabled={!isConnected}
+                  onClick={() => publishMessage("projectgrid/test", { timestamp: Date.now(), sensor: "Conexão OK!" })}
+                  className={`ml-2 px-3 py-2 rounded text-xs font-bold transition-colors flex items-center gap-1 ${isConnected ? "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200" : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"}`}
+                >
+                  📡 Testar
+                </button>
+              </div>
+            </div>
+
+            <StatsGrid stats={statsData} />
+
+            {connectionError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                <div className="text-red-500 mt-1">⚠️</div>
+                <div>
+                  <h3 className="text-sm font-bold text-red-800">Falha na Conexão MQTT</h3>
+                  <p className="text-sm text-red-700 font-mono mt-1 mb-2">{connectionError}</p>
+                </div>
+              </div>
+            )}
+
+            <DiscoveryGrid
+              currentData={mqttData}
+              currentTopic={mqttData?.topic || "Desconhecido"}
+              brokerId={selectedBrokerId}
+            />
+          </>
+        );
+      case "config":
+        return (
+          <>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">Configurações</h1>
+              <p className="text-sm text-gray-600">Gerencie sua conexão MQTT e preferências</p>
+            </div>
+            <div className="w-full">
+              <BrokerConfigForm />
+            </div>
+          </>
+        );
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
+            <p className="text-lg font-medium">Em desenvolvimento</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header user={user} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+      <div className="flex">
+        <Sidebar
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          activeItem={activeItem}
+          setActiveItem={setActiveItem}
+          onLogout={handleLogout}
+        />
+        <main className="flex-1 min-h-[calc(100vh-4rem)]">
+          <div className="px-4 py-6">{loading ? <div className="flex justify-center p-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div> : renderContent()}</div>
+        </main>
+      </div>
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+    </div>
+  );
+}
