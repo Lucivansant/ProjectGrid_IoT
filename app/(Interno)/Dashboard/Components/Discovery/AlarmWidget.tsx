@@ -1,4 +1,9 @@
-import React, { useMemo, useState } from "react";
+/**
+ * Widget de Alarmes Globais.
+ * Monitora todos os dispositivos em tempo real, detecta violações de limites
+ * configurados e exibe um painel flutuante de alertas ativos.
+ */
+import React, { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Bell, AlertTriangle, X } from "lucide-react";
 import { db } from "../../../_lib/db/LocalDatabase";
@@ -7,9 +12,10 @@ import { DeviceProcessor } from "../../../_lib/utils/DeviceProcessor";
 
 interface AlarmWidgetProps {
   devices: DiscoveredDevice[];
+  onAlarmsChange?: (byTopic: Map<string, ActiveAlarm[]>) => void;
 }
 
-interface ActiveAlarm {
+export interface ActiveAlarm {
   topic: string;
   metric: string;
   value: number | string;
@@ -17,13 +23,16 @@ interface ActiveAlarm {
   type: "min" | "max" | "exact";
 }
 
-export function AlarmWidget({ devices }: AlarmWidgetProps) {
+/**
+ * Centraliza a detecção de anomalias em todos os dispositivos monitorados.
+ */
+export function AlarmWidget({ devices, onAlarmsChange }: AlarmWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // 1. Busca configurações de alarmes
   const configs = useLiveQuery(() => db.device_configs.toArray(), []);
 
-  // 2. Calcula alarmes ativos
+  // 2. Calcula alarmes ativos — mesma lógica do AlarmSettings
   const activeAlarms = useMemo(() => {
     if (!configs || devices.length === 0) return [];
 
@@ -34,16 +43,34 @@ export function AlarmWidget({ devices }: AlarmWidgetProps) {
       const config = configMap.get(device.topic);
       if (!config?.limits) continue;
 
-      const safePayload = DeviceProcessor.safeParse(device.lastPayload);
-      const telemetry = DeviceProcessor.extractTelemetry(safePayload);
+      // Usa o payload raw parseado — igual ao AlarmSettings
+      const raw = DeviceProcessor.safeParse(device.lastPayload);
 
-      for (const [key, val] of Object.entries(telemetry)) {
+      // Resolve sub-objeto (telemetry / sensores / sensors) ou usa a raiz
+      const source: Record<string, unknown> =
+        (typeof raw.telemetry === "object" && raw.telemetry !== null
+          ? raw.telemetry
+          : typeof raw.sensores === "object" && raw.sensores !== null
+          ? raw.sensores
+          : typeof raw.sensors === "object" && raw.sensors !== null
+          ? raw.sensors
+          : raw) as Record<string, unknown>;
+
+      for (const [key, val] of Object.entries(source)) {
+        // Ignora campos estruturais (igual ao AlarmSettings)
+        if (
+          key.toLowerCase().includes("timestamp") ||
+          key.toLowerCase() === "id" ||
+          key === "_id"
+        )
+          continue;
+
         const limit = config.limits[key];
         if (!limit) continue;
 
         const isNumericLike =
           typeof val === "number" ||
-          (typeof val === "string" && !isNaN(parseFloat(val)));
+          (typeof val === "string" && !isNaN(parseFloat(val as string)));
         const parsedNumeric = isNumericLike ? parseFloat(String(val)) : null;
 
         if (isNumericLike && parsedNumeric !== null) {
@@ -67,6 +94,7 @@ export function AlarmWidget({ devices }: AlarmWidgetProps) {
           }
         }
 
+        // Alarme de texto (exactMatch) — também suportado agora
         if (
           limit.exactMatch !== undefined &&
           String(val).toLowerCase() === limit.exactMatch.toLowerCase()
@@ -84,7 +112,19 @@ export function AlarmWidget({ devices }: AlarmWidgetProps) {
     return results;
   }, [devices, configs]);
 
-  // 3. Agrupamento por Dispositivo
+  // 3. Notifica o pai quando os alarmes mudam
+  useEffect(() => {
+    if (!onAlarmsChange) return;
+    const byTopic = new Map<string, ActiveAlarm[]>();
+    activeAlarms.forEach((alarm) => {
+      const list = byTopic.get(alarm.topic) ?? [];
+      list.push(alarm);
+      byTopic.set(alarm.topic, list);
+    });
+    onAlarmsChange(byTopic);
+  }, [activeAlarms, onAlarmsChange]);
+
+  // 4. Agrupamento por Dispositivo (para exibição no painel)
   const groupedAlarms = useMemo(() => {
     const groups = new Map<
       string,

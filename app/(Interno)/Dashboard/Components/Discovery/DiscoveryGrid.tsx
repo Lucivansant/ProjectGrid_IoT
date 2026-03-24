@@ -1,26 +1,37 @@
+/**
+ * Grade de Descoberta de Dispositivos.
+ * Responsável por monitorar novos tópicos MQTT, gerenciar a persistência
+ * de mensagens no IndexedDB e orquestrar a exibição da tabela de dispositivos.
+ */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "../../../_lib/db/LocalDatabase";
 import { Cpu, Activity } from "lucide-react";
 import { StorageStatusWidget } from "./StorageStatusWidget";
 import { DevicesTable, DiscoveredDevice } from "../DataGrid/DevicesTable";
-import { AlarmWidget } from "./AlarmWidget";
+import { AlarmWidget, ActiveAlarm } from "./AlarmWidget";
 
 interface DiscoveryGridProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   currentData: any | null; // Dados chegando em tempo real do hook MQTT
   currentTopic: string; // Tópico atual (para contexto)
   brokerId: string; // Para segregar dados por broker
+  onDeviceCountChange?: (count: number) => void;
 }
 
+/**
+ * Componente principal para rastreamento e listagem de dispositivos MQTT ativos.
+ */
 export function DiscoveryGrid({
   currentData,
   currentTopic,
   brokerId,
+  onDeviceCountChange,
 }: DiscoveryGridProps) {
   const [devices, setDevices] = useState<Map<string, DiscoveredDevice>>(
     new Map(),
   );
+  const [alarmsByTopic, setAlarmsByTopic] = useState<Map<string, ActiveAlarm[]>>(new Map());
 
   // 0. Carregar histórico inicial (Rehidratação)
   useEffect(() => {
@@ -136,8 +147,24 @@ export function DiscoveryGrid({
     processMessage();
   }, [currentData, currentTopic, brokerId]);
 
-  // Converter Map para Array para renderizar
-  const deviceList = Array.from(devices.values());
+  // Memoize o array — referência estável enquanto o Map não mudar
+  // CRÍTICO: sem isso, AlarmWidget recebe um array novo a cada render,
+  // causando loop infinito (activeAlarms recomputa → onAlarmsChange → setState → re-render)
+  const deviceList = useMemo(() => Array.from(devices.values()), [devices]);
+
+  // Callback estável para não re-criar a cada render
+  /**
+   * Atualiza o estado dos alarmes ativos.
+   */
+  const handleAlarmsChange = useCallback(
+    (byTopic: Map<string, ActiveAlarm[]>) => setAlarmsByTopic(byTopic),
+    [],
+  );
+
+  // Notifica o pai sobre a contagem atual de dispositivos
+  useEffect(() => {
+    onDeviceCountChange?.(deviceList.length);
+  }, [deviceList.length, onDeviceCountChange]);
 
   if (deviceList.length === 0) {
     return (
@@ -155,8 +182,8 @@ export function DiscoveryGrid({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <div className="flex flex-col h-full gap-4">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shrink-0">
         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <Cpu className="w-5 h-5 text-blue-600" />
           Dispositivos Descobertos ({deviceList.length})
@@ -165,18 +192,18 @@ export function DiscoveryGrid({
         <StorageStatusWidget
           brokerId={brokerId}
           onClearComplete={() => {
-            // Limpa o estado visual da memória (Cards)
             setDevices(new Map());
-            // Mantemos lastProcessedRef intacto para evitar re-processar a msg atual
           }}
         />
       </div>
 
-      {/* Renderização da Tabela Nova */}
-      <DevicesTable devices={deviceList} />
+      {/* Tabela ocupa o restante da altura disponível */}
+      <div className="flex-1 min-h-0">
+        <DevicesTable devices={deviceList} alarmsByTopic={alarmsByTopic} />
+      </div>
 
       {/* Widget Flutuante de Alarmes Globais */}
-      <AlarmWidget devices={deviceList} />
+      <AlarmWidget devices={deviceList} onAlarmsChange={handleAlarmsChange} />
     </div>
   );
 }

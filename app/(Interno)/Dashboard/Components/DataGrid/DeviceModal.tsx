@@ -1,3 +1,8 @@
+/**
+ * Modal de Detalhes do Dispositivo.
+ * Exibe informações aprofundadas sobre um dispositivo selecionado,
+ * alternando entre visualização de gráfico e inspeção de JSON bruto.
+ */
 import React from "react";
 import { X, Maximize2, Activity, Code } from "lucide-react";
 import { DeviceChart } from "../Discovery/DeviceChart";
@@ -12,6 +17,9 @@ interface DeviceModalProps {
   lastPayload: any;
 }
 
+/**
+ * Renderiza o modal sobreposto com as abas de Gráfico e Inspector.
+ */
 export function DeviceModal({
   isOpen,
   onClose,

@@ -19,30 +19,6 @@ export default function Home() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <a
-              href="#features"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Recursos
-            </a>
-            <a
-              href="#pricing"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Planos
-            </a>
-            <a
-              href="#support"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Suporte
-            </a>
-            <a
-              href="/login"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              Entrar
-            </a>
-            <a
               href="/login"
               className="px-5 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
@@ -83,35 +59,6 @@ export default function Home() {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 shadow-lg absolute w-full left-0 top-full">
             <div className="flex flex-col space-y-4">
-              <a
-                href="#features"
-                className="text-gray-600 hover:text-gray-900 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Recursos
-              </a>
-              <a
-                href="#pricing"
-                className="text-gray-600 hover:text-gray-900 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Planos
-              </a>
-              <a
-                href="#support"
-                className="text-gray-600 hover:text-gray-900 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Suporte
-              </a>
-              <hr className="border-gray-100" />
-              <a
-                href="/login"
-                className="text-gray-600 hover:text-gray-900 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Entrar
-              </a>
               <a
                 href="/login"
                 className="bg-gray-900 text-white px-4 py-2 rounded-lg text-center font-medium hover:bg-gray-800"
@@ -286,20 +233,7 @@ export default function Home() {
                 complexas, sem servidores para gerenciar. Foque no que importa:
                 seu projeto IoT.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <a
-                  href="/login"
-                  className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors text-center"
-                >
-                  Entrar no Sistema
-                </a>
-                <a
-                  href="#demo"
-                  className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition-colors text-center"
-                >
-                  Ver Demonstração
-                </a>
-              </div>
+
 
               {/* Destaque MQTT e Estatísticas */}
               <div className="bg-linear-to-r from-gray-50 to-gray-100 border border-gray-300 rounded-lg p-4 mb-4">

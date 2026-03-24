@@ -2,10 +2,11 @@ interface StatItem {
   title: string;
   value?: string;
   change?: string;
-  changeType?: string | "positive" | "warning"; // Flexibilizado
+  changeType?: string | "positive" | "warning";
   icon?: string;
   color?: string;
-  customContent?: React.ReactNode; // Permite injetar componentes complexos
+  customContent?: React.ReactNode;
+  onClick?: () => void; // Modal trigger
 }
 
 interface StatsGridProps {
@@ -14,11 +15,14 @@ interface StatsGridProps {
 
 export function StatsGrid({ stats }: StatsGridProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 min-h-[120px]"
+          onClick={stat.onClick}
+          className={`bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 min-h-[120px] ${
+            stat.onClick ? "cursor-pointer hover:border-indigo-200 hover:ring-1 hover:ring-indigo-100" : ""
+          }`}
         >
           {stat.customContent ? (
             stat.customContent

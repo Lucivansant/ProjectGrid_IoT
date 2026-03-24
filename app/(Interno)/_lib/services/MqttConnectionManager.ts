@@ -1,3 +1,8 @@
+/**
+ * Gerenciador de Conexões MQTT (Singleton).
+ * Implementa o padrão de projeto Singleton para garantir que múltiplas partes
+ * da aplicação compartilhem a mesma instância física de conexão por broker.
+ */
 import { UniversalMqttClient, MqttConnectionConfig } from "./UniversalMqttClient";
 
 /**
@@ -18,6 +23,9 @@ export class MqttConnectionManager {
     // Singleton Privado
   }
 
+  /**
+   * Retorna a instância única do MqttConnectionManager.
+   */
   public static getInstance(): MqttConnectionManager {
     if (!MqttConnectionManager.instance) {
       MqttConnectionManager.instance = new MqttConnectionManager();
@@ -25,6 +33,11 @@ export class MqttConnectionManager {
     return MqttConnectionManager.instance;
   }
 
+  /**
+   * Obtém uma conexão existente ou cria uma nova se não existir.
+   * @param connectionId Um ID único para agrupar conexões (ex: brokerId ou a própria URL)
+   * @param config Configuração da conexão
+   */
   /**
    * Obtém uma conexão existente ou cria uma nova se não existir.
    * @param connectionId Um ID único para agrupar conexões (ex: brokerId ou a própria URL)
@@ -54,6 +67,10 @@ export class MqttConnectionManager {
    * Libera o uso de uma conexão. Se ninguém mais estiver usando, ela é encerrada.
    * @param connectionId ID da conexão a liberar
    */
+  /**
+   * Libera o uso de uma conexão. Se ninguém mais estiver usando, ela é encerrada.
+   * @param connectionId ID da conexão a liberar
+   */
   public releaseConnection(connectionId: string): void {
     const refs = this.references.get(connectionId);
     
@@ -70,6 +87,9 @@ export class MqttConnectionManager {
 
   /**
    * Força a desconexão e remove do mapa.
+   */
+  /**
+   * Força a desconexão e remove do mapa interno de clientes.
    */
   private disconnectAndRemove(connectionId: string) {
     const client = this.clients.get(connectionId);

@@ -1,3 +1,8 @@
+/**
+ * Hook para Conectividade MQTT.
+ * Fornece uma interface simples para que componentes React se conectem
+ * a brokers MQTT, assinem tópicos e publiquem mensagens.
+ */
 import { useEffect, useState, useRef } from 'react';
 import { UniversalMqttClient, MqttConnectionConfig, SensorData } from '../services/UniversalMqttClient';
 // Importação relativa para o mesmo diretório services (ajuste conforme necessário)
@@ -8,6 +13,10 @@ const DEFAULT_CONFIG: MqttConnectionConfig = {
   clientId: `project_grid_dev_${Math.random().toString(16).slice(2)}`,
 };
 
+/**
+ * Hook principal para interagir com o protocolo MQTT.
+ * Gerencia conexão, erros, recebimento de dados e publicação de mensagens.
+ */
 export function useMqtt(topic: string, userConfig?: MqttConnectionConfig) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -99,6 +108,9 @@ export function useMqtt(topic: string, userConfig?: MqttConnectionConfig) {
     };
   }, [topic, userConfig]);
 
+  /**
+   * Publica uma mensagem no broker MQTT atual.
+   */
   const publishMessage = (topic: string, message: object | string) => {
     if (clientRef.current) {
       clientRef.current.publish(topic, message);

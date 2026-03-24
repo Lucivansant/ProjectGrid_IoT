@@ -1,3 +1,8 @@
+/**
+ * Hook para Histórico de Dados de Dispositivos.
+ * Recupera mensagens persistidas no IndexedDB local e as processa
+ * para facilitar a renderização de gráficos e tabelas de histórico.
+ */
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db } from "../db/LocalDatabase";
@@ -13,6 +18,9 @@ export interface ProcessedHistoryItem {
 /**
  * Hook para buscar e processar histórico de mensagens de um dispositivo.
  * Retorna dados prontos para consumo por gráficos (recharts) e tabelas.
+ */
+/**
+ * Recupera e formata mensagens históricas do banco de dados local para um tópico específico.
  */
 export function useDeviceHistory(topic: string, limit: number = 50) {
   // Query reativa ao banco de dados local

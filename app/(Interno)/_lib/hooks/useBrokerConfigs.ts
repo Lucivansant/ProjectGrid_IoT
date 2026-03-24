@@ -1,3 +1,8 @@
+/**
+ * Hook para Gerenciamento de Configurações de Brokers.
+ * Abstrai as chamadas ao servidor (SQLite) para listagem, criação,
+ * atualização e exclusão de brokers MQTT.
+ */
 import { useState, useCallback } from "react";
 import { fetchBrokersPublic, saveBrokerServer, deleteBrokerServer, BrokerConfigPublic } from "../actions/brokerActions";
 
@@ -7,12 +12,18 @@ export interface BrokerConfig extends BrokerConfigPublic {
   password?: string | null;
 }
 
+/**
+ * Mantém o estado dos brokers e fornece funções para manipulação de dados.
+ */
 export function useBrokerConfigs(initialData: BrokerConfigPublic[] = []) {
   const [brokers, setBrokers] = useState<BrokerConfigPublic[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Carregar Brokers do banco de dados (SQLite) - Versão Protegida
+  /**
+   * Carrega a lista de brokers do servidor.
+   */
   const loadBrokers = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -31,6 +42,9 @@ export function useBrokerConfigs(initialData: BrokerConfigPublic[] = []) {
   }, []);
 
   // Salvar (Criar ou Atualizar)
+  /**
+   * Salva ou atualiza um broker no servidor.
+   */
   const saveBroker = async (data: Partial<BrokerConfig> & { id?: string }) => {
     setLoading(true);
     setError(null);
@@ -52,6 +66,9 @@ export function useBrokerConfigs(initialData: BrokerConfigPublic[] = []) {
   };
 
   // Deletar
+  /**
+   * Remove um broker do servidor.
+   */
   const deleteBroker = async (id: string) => {
     try {
       const success = await deleteBrokerServer(id);

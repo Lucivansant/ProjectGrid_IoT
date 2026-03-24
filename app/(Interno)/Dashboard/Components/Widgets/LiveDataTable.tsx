@@ -1,3 +1,8 @@
+/**
+ * Tabela de Dados em Tempo Real.
+ * Exibe as métricas de sensores do último payload recebido em uma
+ * estrutura de tabela simples com chave e valor, útil para monitoramento imediato.
+ */
 "use client";
 import React from "react";
 import { Database, Activity } from "lucide-react";
@@ -10,16 +15,25 @@ interface LiveDataTableProps {
   data: SensorData | null;
 }
 
+/**
+ * Renderiza uma tabela dinâmica com os sensores do último payload.
+ */
 export function LiveDataTable({ data }: LiveDataTableProps) {
   // Função recursiva para achatar o objeto JSON (flatten) se necessário,
   // ou apenas extrair chaves de primeiro nível.
   // Para visualização "mastigada", vamos focar em sensores conhecidos.
 
+  /**
+   * Converte qualquer tipo de valor JSON em uma string segura para exibição.
+   */
   const safeStringify = (val: JsonValue): string => {
     if (typeof val === "object" && val !== null) return JSON.stringify(val);
     return String(val);
   };
 
+  /**
+   * Mapeia as entradas do payload para elementos de linha da tabela.
+   */
   const renderRows = () => {
     if (!data || !data.sensors) {
       return (

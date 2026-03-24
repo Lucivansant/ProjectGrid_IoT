@@ -1,3 +1,8 @@
+/**
+ * Cabeçalho da Aplicação (Header).
+ * Exibe o logotipo do ProjectGrid, informações do usuário logado
+ * e controles de notificações e menu mobile.
+ */
 import Image from "next/image";
 
 interface User {
@@ -15,6 +20,9 @@ interface HeaderProps {
   setIsMobileMenuOpen: (isOpen: boolean) => void;
 }
 
+/**
+ * Renderiza o cabeçalho superior com infos do usuário e menu mobile.
+ */
 export function Header({
   user,
   isMobileMenuOpen,

@@ -1,3 +1,8 @@
+/**
+ * Configurações de Alarmes.
+ * Permite ao usuário definir limites mínimos e máximos para métricas numéricas,
+ * ou correspondências exatas para textos, disparando alertas visuais.
+ */
 import React from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../../../_lib/db/LocalDatabase";
@@ -9,6 +14,9 @@ interface AlarmSettingsProps {
   lastPayload: any;
 }
 
+/**
+ * Gerencia o painel de configuração e monitoramento de alertas de um tópico.
+ */
 export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
   // 1. Identificar chaves numéricas disponíveis no payload
   const availableKeys = React.useMemo(() => {
@@ -38,6 +46,9 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
     return await db.device_configs.get(topic);
   }, [topic]);
 
+  /**
+   * Salva um limite numérico (mínimo ou máximo) no banco local.
+   */
   const handleSaveLimitNumeric = async (
     key: string,
     type: "min" | "max",
@@ -63,6 +74,9 @@ export function AlarmSettings({ topic, lastPayload }: AlarmSettingsProps) {
     });
   };
 
+  /**
+   * Salva uma regra de correspondência de texto exato no banco local.
+   */
   const handleSaveLimitText = async (key: string, value: string) => {
     const textValue = value.trim() === "" ? undefined : value.trim();
 

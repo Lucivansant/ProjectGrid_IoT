@@ -1,13 +1,7 @@
 /**
- * DeviceProcessor.ts
- *
- * Classe utilitária responsável por centralizar a lógica de processamento
- * de dados brutos dos dispositivos IoT.
- *
- * Objetivos:
- * 1. Garantir tipagem segura (sem any).
- * 2. Centralizar regras de negócio (ex: o que é considerado "telemetria").
- * 3. Facilitar testes e manutenção.
+ * Processador de Dados de Dispositivos.
+ * Centraliza a lógica de tratamento, validação e extração de telemetria
+ * a partir das mensagens brutas recebidas via MQTT.
  */
 
 // Interface para definir o formato de dados numéricos extraídos
@@ -17,8 +11,7 @@ export interface TelemetryData {
 
 export class DeviceProcessor {
   /**
-   * Converte um payload desconhecido (string JSON, objeto ou string pura)
-   * em um objeto TypeScript seguro (Record<string, unknown>).
+   * Realiza o parse seguro de um payload JSON.
    */
   public static safeParse(rawPayload: unknown): Record<string, unknown> {
     if (!rawPayload) {
@@ -37,7 +30,7 @@ export class DeviceProcessor {
         if (typeof parsed === "object" && parsed !== null) {
           return parsed as Record<string, unknown>;
         }
-      } catch (error) {
+      } catch {
         // Falha silenciosa no parse, retornamos vazio
         return {};
       }
@@ -47,8 +40,7 @@ export class DeviceProcessor {
   }
 
   /**
-   * Extrai apenas os campos numéricos (telemetria) de um payload.
-   * Procura automaticamente por chaves comuns como 'telemetry', 'sensors' ou usa a raiz.
+   * Filtra e extrai apenas campos numéricos do payload para telemetria.
    */
   public static extractTelemetry(payload: Record<string, unknown>): TelemetryData {
     // 1. Tenta encontrar um sub-objeto específico de dados
@@ -90,7 +82,7 @@ export class DeviceProcessor {
   }
 
   /**
-   * Determina se um dispositivo está Online baseado no último "visto" (lastSeen).
+   * Verifica se o dispositivo está com status online baseado na última atividade.
    */
   public static isDeviceOnline(lastSeen: number, currentTime: number = Date.now(), toleranceMs: number = 15000): boolean {
     if (!lastSeen) return false;
@@ -99,7 +91,7 @@ export class DeviceProcessor {
   }
 
   /**
-   * Tenta encontrar o timestamp dentro do payload, ou usa o timestamp de recebimento.
+   * Obtém o timestamp do payload ou retorna o fallback.
    */
   public static getTimestamp(payload: Record<string, unknown>, fallbackTimestamp: number): number {
     if (typeof payload.timestamp === 'number') {

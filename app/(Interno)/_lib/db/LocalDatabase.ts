@@ -1,3 +1,8 @@
+/**
+ * Configuração do Banco de Dados Local (IndexedDB).
+ * Utiliza o Dexie.js para gerenciar persistência de mensagens MQTT
+ * e configurações de dispositivos diretamente no navegador do usuário.
+ */
 import Dexie, { Table } from 'dexie';
 
 export interface MqttMessageRecord {
@@ -18,6 +23,10 @@ class ProjectGridDB extends Dexie {
   messages!: Table<MqttMessageRecord>;
   device_configs!: Table<DeviceConfig>;
 
+  /**
+   * Construtor da classe ProjectGridDB.
+   * Define as versões e esquemas de tabelas para persistência local.
+   */
   constructor() {
     super('ProjectGridDB');
     

@@ -1,7 +1,13 @@
+/**
+ * Tabela de Dispositivos.
+ * Exibe a lista de todos os dispositivos detectados pelo broker,
+ * permitindo busca por tópico e visualização rápida de status.
+ */
 import React, { useState, useEffect } from "react";
 import { DeviceModal } from "./DeviceModal";
 import { DeviceRow } from "./DeviceRow";
 import { Search } from "lucide-react";
+import { ActiveAlarm } from "../Discovery/AlarmWidget";
 
 // Reutilizamos a interface do DiscoveryGrid para consistência
 export interface DiscoveredDevice {
@@ -14,9 +20,13 @@ export interface DiscoveredDevice {
 
 interface DevicesTableProps {
   devices: DiscoveredDevice[];
+  alarmsByTopic?: Map<string, ActiveAlarm[]>;
 }
 
-export function DevicesTable({ devices }: DevicesTableProps) {
+/**
+ * Renderiza a listagem principal dos dispositivos com filtros de busca.
+ */
+export function DevicesTable({ devices, alarmsByTopic }: DevicesTableProps) {
   const [selectedDevice, setSelectedDevice] = useState<DiscoveredDevice | null>(
     null,
   );
@@ -35,7 +45,7 @@ export function DevicesTable({ devices }: DevicesTableProps) {
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-[700px]">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-full">
         {/* Header da Tabela com Busca */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
           <div className="relative w-full sm:max-w-xs">
@@ -74,7 +84,7 @@ export function DevicesTable({ devices }: DevicesTableProps) {
                   device={device}
                   currentTime={now}
                   onSelect={setSelectedDevice}
-                  // style prop não é necessária no modo padrão
+                  alarms={alarmsByTopic?.get(device.topic)}
                 />
               ))}
             </div>

@@ -1,3 +1,8 @@
+/**
+ * Console de Mensagens MQTT.
+ * Fornece uma visualização estilo terminal em tempo real das mensagens JSON
+ * que chegam de um determinado tópico, útil para depuração rápida.
+ */
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { Terminal, XCircle, ArrowDown } from "lucide-react";
@@ -15,6 +20,9 @@ interface MqttConsoleProps {
   lastMessage: SensorData | null;
 }
 
+/**
+ * Componente funcional de terminal para monitoramento de pacotes MQTT.
+ */
 export function MqttConsole({ topic, lastMessage }: MqttConsoleProps) {
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);

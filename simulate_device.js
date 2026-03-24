@@ -1,6 +1,19 @@
+/**
+ * Script de Simulação de Dispositivos IoT.
+ * Este script cria clientes MQTT virtuais que publicam dados aleatórios simulando 
+ * sensores industriais reais para testes de interface e backend.
+ */
 const mqtt = require('mqtt');
 
 // Função para criar um dispositivo virtual (Assíncrono)
+/**
+ * Cria um simulador de dispositivo individual.
+ * @param {string} idLocal - Identificador do dispositivo.
+ * @param {string} topico - Tópico MQTT para publicação.
+ * @param {number} intervaloMs - Frequência de envio de dados em milissegundos.
+ * @param {number[]} rangeTemp - Intervalo [min, max] para variação de temperatura.
+ * @param {number[]} rangeUmid - Intervalo [min, max] para variação de umidade.
+ */
 function criarSimulador(idLocal, topico, intervaloMs, rangeTemp, rangeUmid) {
   // Conecta ao Broker Local (porta TCP 1885) com ClientID único para não derrubar os outros
   const client = mqtt.connect('mqtt://localhost:1885', {
@@ -47,10 +60,19 @@ function criarSimulador(idLocal, topico, intervaloMs, rangeTemp, rangeUmid) {
 console.log('🚀 Iniciando Frota de Simuladores Assíncronos...\n');
 
 // 1. Estufa (Clima Tropical, Atualização Média)
-criarSimulador('Estufa_Central', 'projectgrid/estufa', 3000, [25, 30], [60, 80]);
+criarSimulador('dispositivo_04', 'projectgrid/dispositivo_04', 3000, [25, 30], [60, 80]);
 
 // 2. Refrigerador de Vacinas (Frio Extremo, Atualização Lenta)
-criarSimulador('Refrigerador_01', 'projectgrid/refrigerador', 5000, [2, 6], [85, 95]);
+criarSimulador('dispositivo_05', 'projectgrid/dispositivo_05', 5000, [2, 6], [85, 95]);
 
 // 3. Motor da Bomba (Temperatura Alta, Atualização Muito Rápida)
-criarSimulador('Motor_Bomba_X', 'projectgrid/motor', 1500, [60, 85], [10, 20]);
+criarSimulador('dispositivo_06', 'projectgrid/dispositivo_06', 1500, [60, 85], [10, 20]);
+
+// 4. Dispositivo genérico 01 (Temperatura ambiente, Atualização Média)
+criarSimulador('dispositivo_01', 'projectgrid/dispositivo_01', 2500, [18, 28], [40, 70]);
+
+// 5. Dispositivo genérico 02 (Temperatura levemente elevada, Atualização Rápida)
+criarSimulador('dispositivo_02', 'projectgrid/dispositivo_02', 2000, [30, 50], [20, 45]);
+
+// 6. Dispositivo genérico 03 (Temperatura fria, Atualização Lenta)
+criarSimulador('dispositivo_03', 'projectgrid/dispositivo_03', 4000, [5, 15], [70, 90]);

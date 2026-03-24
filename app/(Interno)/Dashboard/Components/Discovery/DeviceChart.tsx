@@ -1,3 +1,8 @@
+/**
+ * Gráfico de Dispositivo.
+ * Renderiza um gráfico de área em tempo real utilizando a biblioteca Recharts,
+ * com suporte a múltiplas métricas e detecção visual de status offline.
+ */
 import React, { useEffect, useState, useMemo } from "react";
 import {
   AreaChart,
@@ -16,6 +21,9 @@ interface DeviceChartProps {
   topic: string;
 }
 
+/**
+ * Exibe a telemetria histórica de um dispositivo em formato de gráfico.
+ */
 export function DeviceChart({ topic }: DeviceChartProps) {
   // 1. Hook Inteligente: Busca e processa tudo automaticamente
   const { history, availableKeys, isLoading } = useDeviceHistory(topic, 50);
@@ -74,10 +82,10 @@ export function DeviceChart({ topic }: DeviceChartProps) {
   const colors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b"];
 
   return (
-    <div className="w-full h-full relative group">
-      {/* Alerta de Offline Overlay */}
+    <div className="w-full h-full relative group overflow-hidden rounded-lg">
+      {/* Alerta de Offline Overlay — overflow-hidden no pai garante que cobre TODO o chart */}
       {isOffline && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-lg border-2 border-red-100 transition-all duration-500 animate-in fade-in zoom-in-95">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg border-2 border-red-100 transition-all duration-500 animate-in fade-in zoom-in-95">
           <div className="bg-red-50 text-red-500 p-3 rounded-full mb-2 shadow-sm animate-pulse">
             <WifiOff size={24} />
           </div>
@@ -90,9 +98,9 @@ export function DeviceChart({ topic }: DeviceChartProps) {
         </div>
       )}
 
-      {/* Área do Gráfico */}
+      {/* Área do Gráfico — blur e desaturação aqui, sem backdrop no overlay */}
       <div
-        className={`w-full h-full transition-all duration-500 ${isOffline ? "opacity-40 grayscale-[0.8] blur-[0.5px]" : "opacity-100"}`}
+        className={`w-full h-full transition-all duration-500 ${isOffline ? "opacity-30 grayscale blur-[2px]" : "opacity-100"}`}
       >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>

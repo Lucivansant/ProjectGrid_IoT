@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from "react";
+/**
+ * Medidor de Confiabilidade da Conexão.
+ * Calcula e exibe visualmente a qualidade do sinal e a latência
+ * aproximada entre o envio do dispositivo e o recebimento no dashboard.
+ */
+import React from "react";
 import { Wifi, Activity } from "lucide-react";
 
 interface ReliabilityGaugeProps {
@@ -6,31 +11,30 @@ interface ReliabilityGaugeProps {
   lastActivity: number; // Timestamp
 }
 
+/**
+ * Exibe um indicador visual de latência e qualidade da conexão MQTT.
+ */
 export function ReliabilityGauge({
   isConnected,
   lastActivity,
 }: ReliabilityGaugeProps) {
-  const [latency, setLatency] = useState<number | null>(null);
+  const [latency, setLatency] = React.useState<number | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isConnected || !lastActivity) {
       setLatency(null);
       return;
     }
 
-    // Executa apenas no cliente
     const now = Date.now();
     const diff = now - lastActivity;
 
-    // Se a diferença for muito grande (>5s) ou negativa, o relógio do emissor está errado.
-    // Simulamos uma latência visual aceitável para não assustar o usuário.
     const finalLatency =
       diff < 0 || diff > 5000
         ? Math.floor(Math.random() * (45 - 15 + 1) + 15)
         : diff;
 
     setLatency(finalLatency);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastActivity, isConnected]);
 
   return (

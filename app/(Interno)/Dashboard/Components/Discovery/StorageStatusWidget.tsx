@@ -1,6 +1,11 @@
+/**
+ * Widget de Status de Armazenamento.
+ * Exibe estatísticas detalhadas sobre o uso do banco de dados local,
+ * incluindo previsões de quanto tempo o espaço durará e opção de limpeza.
+ */
 import React, { useEffect, useState } from "react";
 import { db } from "../../../_lib/db/LocalDatabase";
-import { Database, Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, AlertTriangle } from "lucide-react";
 
 interface StorageStatusWidgetProps {
   brokerId: string;
@@ -14,6 +19,91 @@ interface StorageStats {
   estimatedDaysLeft: string;
 }
 
+/* ─── Modal de Confirmação ─────────────────────────────────────────── */
+/**
+ * Modal de diálogo interno para confirmação de exclusão de dados.
+ */
+function ConfirmModal({
+  open,
+  recordCount,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  recordCount: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-5 animate-[fadeInScale_0.18s_ease]"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          animation: "fadeInScale 0.18s cubic-bezier(.4,0,.2,1) both",
+        }}
+      >
+        {/* Ícone */}
+        <div className="flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+            <AlertTriangle size={28} className="text-red-500" />
+          </div>
+        </div>
+
+        {/* Texto */}
+        <div className="text-center">
+          <h3 className="text-base font-bold text-gray-900 mb-1">
+            Limpar histórico?
+          </h3>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Isso irá apagar permanentemente{" "}
+            <span className="font-semibold text-gray-700">
+              {recordCount.toLocaleString("pt-BR")} registro
+              {recordCount !== 1 ? "s" : ""}
+            </span>{" "}
+            <span className="text-red-500 font-medium">apenas deste broker</span>.
+            Esta ação não pode ser desfeita.
+          </p>
+        </div>
+
+        {/* Botões */}
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 active:scale-95 text-sm font-semibold text-white transition-all shadow-sm"
+          >
+            Sim, limpar
+          </button>
+        </div>
+      </div>
+
+      {/* Keyframe embutido via style tag */}
+      <style>{`
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.92) translateY(8px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);   }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ─── Widget Principal ─────────────────────────────────────────────── */
+/**
+ * Exibe estatísticas de uso de banco e previsão de capacidade.
+ */
 export function StorageStatusWidget({
   brokerId,
   onClearComplete,
@@ -26,8 +116,12 @@ export function StorageStatusWidget({
   });
 
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const updateStats = async () => {
+  /**
+   * Recalcula estatísticas de uso e faz predições temporais.
+   */
+  const updateStats = React.useCallback(async () => {
     try {
       // 1. Contagem de registros no Dexie APENAS para este broker
       const count = await db.messages
@@ -68,25 +162,18 @@ export function StorageStatusWidget({
 
           // --- Lógica de Predição Temporal ---
           if (count > 5) {
-            // Buscamos o registro mais antigo disponível no banco para calcular a taxa de ingestão de longo prazo
             const oldestMsg = await db.messages
               .where("brokerId")
               .equals(brokerId)
               .limit(1)
               .first();
-            // O mais recente é o primeiro da amostra reversa
             const newestMsg = sampleMsgs[0];
 
             if (oldestMsg && newestMsg) {
               const timeSpanMs = newestMsg.timestamp - oldestMsg.timestamp;
               if (timeSpanMs > 5000) {
-                // Precisa de pelo menos 30s de histórico
-
-                // Taxa de crescimento: Bytes por ms
-                // Consideramos que TODO o uso atual foi gerado nesse intervalo de tempo (aproximação)
                 const bytesPerMs = usage / timeSpanMs;
-
-                const freeBytes = quota - usage; // Espaço restante no disco
+                const freeBytes = quota - usage;
 
                 if (bytesPerMs > 0) {
                   const msLeft = freeBytes / bytesPerMs;
@@ -114,19 +201,20 @@ export function StorageStatusWidget({
     } catch (error) {
       console.error("Erro ao ler stats de armazenamento:", error);
     }
-  };
+  }, [brokerId]);
 
   useEffect(() => {
     updateStats();
     const interval = setInterval(updateStats, 5000);
     return () => clearInterval(interval);
-  }, [brokerId]);
+  }, [brokerId, updateStats]);
 
+  /**
+   * Remove registros do broker atual do banco local.
+   */
   const handleClearStorage = async () => {
-    if (!confirm("Tem certeza? Isso apagará o histórico APENAS deste broker."))
-      return;
-
     setLoading(true);
+    setShowConfirm(false);
     try {
       await db.messages.where("brokerId").equals(brokerId).delete();
       await updateStats();
@@ -156,87 +244,64 @@ export function StorageStatusWidget({
       ? stats.usageBytes / stats.recordCount
       : 500;
 
-  const freeBytes = stats.quotaBytes - stats.usageBytes;
-  const estimatedRecordsLeft = Math.floor(freeBytes / avgBytesPerRecord);
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full lg:flex-1 transition-all">
-      {/* Ícone e Contagem Principal */}
-      <div className="flex items-center gap-4 w-full sm:w-auto">
-        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl shadow-sm">
-          <Database size={22} />
-        </div>
-        <div>
-          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">
-            Armazenamento Local
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-gray-800">
-              {stats.recordCount}
-            </span>
-            <span className="text-xs text-gray-500 font-medium">registros</span>
-          </div>
+    <>
+      {/* Modal de confirmação customizado */}
+      <ConfirmModal
+        open={showConfirm}
+        recordCount={stats.recordCount}
+        onConfirm={handleClearStorage}
+        onCancel={() => setShowConfirm(false)}
+      />
 
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium border border-green-100 whitespace-nowrap">
-              +{" "}
-              {estimatedRecordsLeft > 1000000
-                ? `${(estimatedRecordsLeft / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M`
-                : estimatedRecordsLeft.toLocaleString("pt-BR")}{" "}
-              msgs
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="h-10 w-px bg-gray-100 hidden sm:block"></div>
-
-      {/* Barra de Progresso e Estimativa */}
-      <div className="w-full sm:flex-1 min-w-[200px]">
-        <div className="flex justify-between items-center mb-1.5">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold text-gray-700">
-              {formatBytes(stats.usageBytes)}
-            </span>
-            <span className="text-gray-400">
-              usados de {formatBytes(stats.quotaBytes)}
-            </span>
-          </div>
-          <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 rounded">
-            {usagePercent}%
-          </span>
-        </div>
-
-        <div className="w-full bg-gray-100 rounded-full h-2 mb-2 overflow-hidden shadow-inner">
-          <div
-            className={`h-full rounded-full transition-all duration-1000 ${Number(usagePercent) > 90 ? "bg-red-500" : "bg-purple-500"}`}
-            style={{ width: `${Math.max(Number(usagePercent), 2)}%` }}
-          />
-        </div>
-
-        <div className="flex justify-between items-center text-[10px] text-gray-500">
-          <span>~{Math.round(avgBytesPerRecord)} B/msg</span>
-          {stats.estimatedDaysLeft !== "---" ? (
-            <div className="flex items-center gap-1 text-blue-600 font-medium animate-pulse">
-              <Clock size={12} />
-              <span>Cheio em {stats.estimatedDaysLeft}</span>
+      <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm flex flex-row items-center gap-4 w-full lg:flex-1 transition-all">
+        {/* Barra de Progresso e Estimativa */}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-center mb-1.5">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-semibold text-gray-700">
+                {formatBytes(stats.usageBytes)}
+              </span>
+              <span className="text-gray-400">
+                usados de {formatBytes(stats.quotaBytes)}
+              </span>
             </div>
-          ) : (
-            <span>Calculando tempo...</span>
-          )}
-        </div>
-      </div>
+            <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 rounded">
+              {usagePercent}%
+            </span>
+          </div>
 
-      {/* Botão de Ação */}
-      <button
-        onClick={handleClearStorage}
-        disabled={loading || stats.recordCount === 0}
-        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent ml-auto sm:ml-0 flex items-center gap-2"
-        title="Limpar Histórico"
-      >
-        <span className="text-xs font-medium sm:hidden">Limpar</span>
-        <Trash2 size={18} />
-      </button>
-    </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 mb-2 overflow-hidden shadow-inner">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${Number(usagePercent) > 90 ? "bg-red-500" : "bg-purple-500"}`}
+              style={{ width: `${Math.max(Number(usagePercent), 2)}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-[10px] text-gray-500">
+            <span>~{Math.round(avgBytesPerRecord)} B/msg</span>
+            {stats.estimatedDaysLeft !== "---" ? (
+              <div className="flex items-center gap-1 text-blue-600 font-medium animate-pulse">
+                <Clock size={12} />
+                <span>Cheio em {stats.estimatedDaysLeft}</span>
+              </div>
+            ) : (
+              <span>Calculando tempo...</span>
+            )}
+          </div>
+        </div>
+
+        {/* Botão de Ação */}
+        <button
+          onClick={() => setShowConfirm(true)}
+          disabled={loading || stats.recordCount === 0}
+          className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+          title="Limpar Histórico"
+        >
+          <Trash2 size={18} className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+    </>
   );
+
 }

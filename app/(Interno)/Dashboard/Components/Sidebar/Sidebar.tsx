@@ -1,3 +1,8 @@
+/**
+ * Sidebar de Navegação.
+ * Contém os links principais para as diferentes áreas do dashboard
+ * e o botão de logout, com suporte a layout responsivo.
+ */
 interface SidebarProps {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (isOpen: boolean) => void;
@@ -6,6 +11,9 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
+/**
+ * Renderiza a barra lateral com itens de menu e ação de logout.
+ */
 export function Sidebar({
   isMobileMenuOpen,
   setIsMobileMenuOpen,
@@ -33,7 +41,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto flex flex-col`}
+      className={`${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-gray-50 border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto flex flex-col`}
     >
       <nav className="p-4 space-y-1">
         {menuItems.map((item) => (

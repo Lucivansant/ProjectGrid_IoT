@@ -1,3 +1,8 @@
+/**
+ * Interface principal do Dashboard do ProjectGrid.
+ * Este arquivo gerencia a conexão MQTT, a troca de brokers e orquestra
+ * todos os componentes de visualização de dados em tempo real.
+ */
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { useMqtt } from "../../_lib/hooks/useMqtt";
@@ -11,11 +16,18 @@ import { StatsGrid } from "./Stats/StatsGrid";
 import { BrokerConfigForm } from "./Config/broker-config-form";
 import { DiscoveryGrid } from "./Discovery/DiscoveryGrid";
 import { ReliabilityGauge } from "./Stats/ReliabilityGauge";
+import { StorageSummaryCard } from "./Stats/StorageSummaryCard";
+import { LastReadCard } from "./Stats/LastReadCard";
+import { StorageStatsModal } from "./Stats/StorageStatsModal";
 
 interface DashboardClientProps {
   initialBrokers: BrokerConfigPublic[];
 }
 
+/**
+ * Componente principal do Client do Dashboard.
+ * Gerencia o estado global da visualização, conexão MQTT e navegação interna.
+ */
 export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("dashboard");
@@ -24,6 +36,8 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   
   const { brokers } = useBrokerConfigs(initialBrokers);
   const [selectedBrokerId, setSelectedBrokerId] = useState<string>("");
+  const [deviceCount, setDeviceCount] = useState(0);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   // Conexão MQTT Ativa
   const [mqttConnectConfig, setMqttConnectConfig] = useState<{
@@ -45,6 +59,10 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   } = useMqtt(activeTopic, mqttConnectConfig);
 
   // Função para trocar de Broker - Agora carrega segredos sob demanda
+  /**
+   * Gerencia a troca de broker MQTT ativo.
+   * Busca as credenciais de segurança e formata a URL de conexão antes de atualizar o estado.
+   */
   const handleBrokerChange = useCallback(async (brokerId: string, list: BrokerConfigPublic[] = brokers) => {
     const selected = list.find((b) => b.id === brokerId);
     if (selected) {
@@ -93,6 +111,9 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   }, [brokers, selectedBrokerId, mqttConnectConfig, handleBrokerChange]);
 
   // Handler de Logout
+  /**
+   * Executa o processo de logout, limpando dados locais e redirecionando para o login.
+   */
   const handleLogout = () => {
     localStorage.clear();
     window.location.href = "/login";
@@ -100,20 +121,23 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
 
   const statsData = [
     {
-      title: "Status do Broker",
-      value: isConnected ? "Online" : connectionError ? "Falha" : "Conectando...",
-      change: isConnected ? "Estável" : connectionError || "...",
-      changeType: (isConnected ? "positive" : connectionError ? "negative" : "warning") as "positive" | "negative" | "warning",
-      icon: "M13 10V3L4 14h7v7l9-11h-7z", // Raio
-      color: (isConnected ? "green" : connectionError ? "red" : "gray") as "green" | "red" | "gray",
+      title: "Resumo Local",
+      onClick: () => setShowStatsModal(true),
+      customContent: (
+        <StorageSummaryCard
+          brokerId={selectedBrokerId}
+          deviceCount={deviceCount}
+          isConnected={!!isConnected}
+          connectionError={connectionError}
+          brokerChange={isConnected ? "Estável" : undefined}
+        />
+      ),
     },
     {
       title: "Última Leitura",
-      value: mqttData ? new Date(mqttData.timestamp).toLocaleTimeString() : "--:--",
-      change: "Tempo Real",
-      changeType: "positive",
-      icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", // Relógio
-      color: "blue",
+      customContent: (
+        <LastReadCard lastTimestamp={mqttData?.timestamp ?? null} />
+      ),
     },
     {
       title: "Confiabilidade",
@@ -126,12 +150,15 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
     },
   ];
 
+  /**
+   * Determina qual conteúdo principal renderizar com base na navegação da sidebar.
+   */
   const renderContent = () => {
     switch (activeItem) {
       case "dashboard":
         return (
-          <>
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col h-full gap-0">
+            <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">Monitoramento em Tempo Real</h1>
                 <p className="text-sm text-gray-600">Visualize os dados brutos chegando do seu dispositivo MQTT.</p>
@@ -163,10 +190,12 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
               </div>
             </div>
 
-            <StatsGrid stats={statsData} />
+            <div className="shrink-0">
+              <StatsGrid stats={statsData} />
+            </div>
 
             {connectionError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shrink-0">
                 <div className="text-red-500 mt-1">⚠️</div>
                 <div>
                   <h3 className="text-sm font-bold text-red-800">Falha na Conexão MQTT</h3>
@@ -175,12 +204,15 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
               </div>
             )}
 
-            <DiscoveryGrid
-              currentData={mqttData}
-              currentTopic={mqttData?.topic || "Desconhecido"}
-              brokerId={selectedBrokerId}
-            />
-          </>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <DiscoveryGrid
+                currentData={mqttData}
+                currentTopic={mqttData?.topic || "Desconhecido"}
+                brokerId={selectedBrokerId}
+                onDeviceCountChange={setDeviceCount}
+              />
+            </div>
+          </div>
         );
       case "config":
         return (
@@ -204,7 +236,7 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header user={user} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
       <div className="flex">
         <Sidebar
@@ -214,12 +246,28 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
           setActiveItem={setActiveItem}
           onLogout={handleLogout}
         />
-        <main className="flex-1 min-h-[calc(100vh-4rem)]">
-          <div className="px-4 py-6">{loading ? <div className="flex justify-center p-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div> : renderContent()}</div>
+        <main className="flex-1 h-[calc(100vh-4rem)] overflow-hidden bg-gray-50 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-hidden px-4 py-6 flex flex-col">
+            {loading
+              ? <div className="flex justify-center p-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+              : renderContent()
+            }
+          </div>
         </main>
       </div>
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
+      {/* Modais Globais */}
+      {showStatsModal && (
+        <StorageStatsModal
+          brokerId={selectedBrokerId}
+          deviceCount={deviceCount}
+          isConnected={!!isConnected}
+          connectionError={connectionError}
+          onClose={() => setShowStatsModal(false)}
+        />
       )}
     </div>
   );

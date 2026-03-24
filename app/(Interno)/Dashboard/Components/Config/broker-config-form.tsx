@@ -1,3 +1,8 @@
+/**
+ * Formulário de Configuração de Broker.
+ * Permite ao usuário cadastrar, editar e excluir as configurações de conexão
+ * com diferentes brokers MQTT, incluindo suporte a tutoriais guiados.
+ */
 "use client";
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Save, Edit3, Server, ShieldCheck } from "lucide-react";
@@ -7,6 +12,9 @@ import {
 } from "../../../_lib/hooks/useBrokerConfigs";
 import { BrokerConfigPublic, getBrokerSecret } from "../../../_lib/actions/brokerActions";
 
+/**
+ * Renderiza a interface de gerenciamento de brokers e tutoriais de ajuda.
+ */
 export function BrokerConfigForm() {
   const {
     brokers,
@@ -48,6 +56,9 @@ export function BrokerConfigForm() {
   // (Erro removido: sincronização via render direto)
 
   // Preencher formulário ao clicar em editar
+  /**
+   * Prepara o formulário para edição de um broker existente.
+   */
   const handleEdit = async (broker: BrokerConfigPublic) => {
     setSelectedId(broker.id);
     setUiMsg(null);
@@ -69,6 +80,9 @@ export function BrokerConfigForm() {
     }
   };
 
+  /**
+   * Limpa o formulário para criação de um novo broker.
+   */
   const handleNew = () => {
     setSelectedId(null);
     setFormData({
@@ -82,6 +96,9 @@ export function BrokerConfigForm() {
     setUiMsg(null);
   };
 
+  /**
+   * Remove permanentemente um broker após confirmação.
+   */
   const handleDeleteClick = async (id: string, e: React.MouseEvent) => {
     e.preventDefault(); // Garante que não faça submit se estiver num form
     e.stopPropagation(); // Impede abrir o modo de edição
@@ -101,6 +118,9 @@ export function BrokerConfigForm() {
     }
   };
 
+  /**
+   * Valida e envia as configurações do broker para o servidor.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUiMsg(null);

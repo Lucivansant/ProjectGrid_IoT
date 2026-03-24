@@ -3,11 +3,23 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import SVG from "./componentes/SVG";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  // ✅ Padrão correto no Next.js para lógica que depende de APIs do browser (window).
+  // isMounted começa false (servidor e 1º render do cliente são idênticos → sem hydration error).
+  // Após montar, detectamos o ambiente real e mostramos o link apenas se NÃO for Electron.
+  const [showHomeLink, setShowHomeLink] = useState(false);
+
+  useEffect(() => {
+    const isElectron = window.navigator.userAgent.includes("Electron");
+    // Este setState dentro do useEffect é intencional — padrão client-only do Next.js
+    // para evitar hydration mismatch ao ler APIs do browser (window).
+    setShowHomeLink(!isElectron); // eslint-disable-line
+  }, []);
 
   const handleEnter = () => {
     router.push("/Dashboard");
@@ -181,8 +193,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Link para Home - Oculto no Electron */}
-          {typeof window !== "undefined" && !window.navigator.userAgent.includes("Electron") && (
+          {/* ✅ Link para Home — renderizado apenas no cliente, fora do Electron.
+              showHomeLink é false no servidor e no 1º render → sem hydration error. */}
+          {showHomeLink && (
             <div className="mt-8 text-center">
               <Link
                 href="/"

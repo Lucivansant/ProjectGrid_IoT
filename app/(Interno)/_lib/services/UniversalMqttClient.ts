@@ -1,3 +1,9 @@
+/**
+ * Cliente MQTT Universal.
+ * Fornece uma camada de abstração sobre a biblioteca mqtt.js,
+ * suportando conexões via WebSocket (browser) ou TCP (node),
+ * além de normalizar o tratamento de mensagens recebidas.
+ */
 import mqtt from 'mqtt';
 
 export interface MqttConnectionConfig {
@@ -24,6 +30,9 @@ export class UniversalMqttClient {
   private connectionHandlers: ((connected: boolean) => void)[] = [];
   private errorHandlers: ((error: Error) => void)[] = [];
 
+  /**
+   * Inicializa a configuração do cliente.
+   */
   constructor(private config: MqttConnectionConfig) {
     // Garante ID único se não for fornecido
     if (!this.config.clientId) {
@@ -31,6 +40,9 @@ export class UniversalMqttClient {
     }
   }
 
+  /**
+   * Estabelece a conexão com o broker utilizando as opções configuradas.
+   */
   connect(): void {
     console.log(`📡 Conectando ao broker: ${this.config.brokerUrl}`);
 
@@ -99,6 +111,9 @@ export class UniversalMqttClient {
     }
   }
 
+  /**
+   * Subscreve em um tópico para receber mensagens.
+   */
   subscribe(topic: string): void {
     if (this.client && this.client.connected) {
       try {
@@ -118,6 +133,9 @@ export class UniversalMqttClient {
     }
   }
 
+  /**
+   * Publica uma mensagem no broker.
+   */
   publish(topic: string, message: object | string): void {
     if (this.client && this.client.connected) {
       const payload = typeof message === 'string' ? message : JSON.stringify(message);
@@ -127,6 +145,9 @@ export class UniversalMqttClient {
     }
   }
 
+  /**
+   * Desconecta o cliente do broker.
+   */
   disconnect(): void {
     if (this.client) {
       this.client.end(true); // Força queda imediata
@@ -135,14 +156,23 @@ export class UniversalMqttClient {
   }
 
   // Hooks para a Interface (React)
+  /**
+   * Registra um handler para mensagens recebidas.
+   */
   onMessage(handler: (topic: string, data: SensorData) => void) {
     this.messageHandlers.push(handler);
   }
 
+  /**
+   * Registra um handler para mudanças de estado na conexão.
+   */
   onConnectionChange(handler: (connected: boolean) => void) {
     this.connectionHandlers.push(handler);
   }
 
+  /**
+   * Registra um handler para captura de erros.
+   */
   onError(handler: (error: Error) => void) {
     this.errorHandlers.push(handler);
   }
