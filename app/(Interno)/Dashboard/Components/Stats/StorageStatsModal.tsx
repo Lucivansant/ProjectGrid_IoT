@@ -42,7 +42,10 @@ export function StorageStatsModal({
 
   useEffect(() => {
     navigator.storage?.estimate().then((e) => {
-      setQuota(e.quota ?? 0);
+      const TWO_GB = 2 * 1024 * 1024 * 1024;
+      const browserQuota = e.quota ?? 0;
+      // Trava em 2GB ou no limite real do navegador (o que for menor)
+      setQuota(Math.min(browserQuota, TWO_GB));
       setUsage(e.usage ?? 0);
     });
   }, []);

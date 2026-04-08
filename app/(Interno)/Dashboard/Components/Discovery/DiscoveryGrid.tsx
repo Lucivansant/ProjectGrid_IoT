@@ -112,13 +112,28 @@ export function DiscoveryGrid({
         const msgAge = Date.now() - msgTimestamp;
         const isOldMessage = msgAge > 10000; // 10 segundos de tolerância
 
-        if (!isOldMessage) {
+        // --- TRAVA DE SEGURANÇA: Limite de 2GB ---
+        const TWO_GB = 2 * 1024 * 1024 * 1024;
+        let isQuotaExceeded = false;
+        
+        if (navigator.storage && navigator.storage.estimate) {
+          const estimate = await navigator.storage.estimate();
+          const usage = estimate.usage || 0;
+          if (usage >= TWO_GB) {
+            isQuotaExceeded = true;
+          }
+        }
+
+        if (!isOldMessage && !isQuotaExceeded) {
           await db.messages.add({
             topic: currentTopic,
             payload: currentData.message,
             brokerId: brokerId,
             timestamp: msgTimestamp,
           });
+        } else if (isQuotaExceeded) {
+          console.warn("[ProjectGrid] Limite de 2GB atingido. Gravação suspensa.");
+          // Aqui poderíamos emitir um evento ou trocar um estado global para fechar a conexão
         }
 
         // Atualizar Estado Visual (Memória)

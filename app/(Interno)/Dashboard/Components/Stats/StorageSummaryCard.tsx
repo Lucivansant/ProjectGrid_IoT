@@ -68,10 +68,12 @@ export function StorageSummaryCard({
       try {
         const count = await db.messages.where("brokerId").equals(brokerId).count();
 
-        let quota = 0;
+        const TWO_GB = 2 * 1024 * 1024 * 1024;
+        let quota = TWO_GB;
         if (navigator.storage?.estimate) {
           const est = await navigator.storage.estimate();
-          quota = est.quota ?? 0;
+          const browserQuota = est.quota ?? 0;
+          quota = Math.min(browserQuota, TWO_GB);
         }
 
         let usage = 0;

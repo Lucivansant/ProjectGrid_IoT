@@ -129,11 +129,15 @@ export function StorageStatusWidget({
         .equals(brokerId)
         .count();
 
-      // 2. Estimativa de Quota REAL do navegador (Limite Físico)
-      let quota = 0;
+      // 2. Limite de Quota: Usamos 2GB como limite padrão sugerido (ou o real do browser, se for menor)
+      const TWO_GB = 2 * 1024 * 1024 * 1024;
+      let quota = TWO_GB;
+      
       if (navigator.storage && navigator.storage.estimate) {
         const estimate = await navigator.storage.estimate();
-        quota = estimate.quota || 0;
+        const browserQuota = estimate.quota || 0;
+        // Se o browser permitir menos que 2GB, usamos o limite do browser. Se não, travamos em 2GB.
+        quota = Math.min(browserQuota, TWO_GB);
       }
 
       // 3. Cálculo de Uso ESPECÍFICO deste broker (Estimativa por Amostragem)

@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ProjectGrid - Plataforma IoT as a Service",
+  title: "ProjectGrid - Dashboard IoT",
   description:
-    "Seu dashboard IoT as a Service. Conecte seu ESP32 e projetos IoT através de Brokers MQTT e WebSockets de maneira unificada e em tempo real.",
+    "Sua central de controle IoT. Conecte dispositivos ESP32, Arduino e sensores via MQTT de forma simplificada.",
   icons: {
     icon: "/icon.svg",
   },

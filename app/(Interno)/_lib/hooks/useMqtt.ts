@@ -26,8 +26,13 @@ export function useMqtt(topic: string, userConfig?: MqttConnectionConfig) {
   const clientRef = useRef<UniversalMqttClient | null>(null);
 
   useEffect(() => {
-    // 1. Configuração da Conexão
-    const config = userConfig || DEFAULT_CONFIG;
+    // 1. Só conecta se houver uma configuração explícita
+    if (!userConfig) {
+      Promise.resolve().then(() => setIsConnected(false));
+      return;
+    }
+    
+    const config = userConfig;
     // Chave única para agrupar conexões iguais 
     // (Ex: Conectar 2x no mesmo broker = 1 Socket)
     const connectionKey = `${config.brokerUrl}::${config.username || 'anon'}`;

@@ -432,10 +432,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Conexão Simplificada
+                Conexão Flexível
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Esqueça deploys difíceis. Utilize o nosso potente servidor interno ou conecte brokers de terceiros como HiveMQ, AWS e EMQX informando apenas a URL.
+                Esqueça deploys difíceis. Utilize o nosso potente servidor interno ou conecte-se a brokers externos como HiveMQ e EMQX com configuração rápida e intuitiva.
               </p>
             </div>
 
@@ -482,11 +482,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Custo-Benefício
+                Custo-Sustentável
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Pague apenas pelo que usar. Sem contas de VPS caras. Planos a
-                partir de R$ 29/mês para dispositivos ilimitados.
+                Pague apenas pelo que usar. Sem taxas de setup ocultas. Planos a partir de R$ 59,90/mês para até 100 dispositivos conectados com alta disponibilidade.
               </p>
             </div>
           </div>

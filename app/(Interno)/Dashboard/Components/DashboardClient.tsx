@@ -38,6 +38,30 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
   const [selectedBrokerId, setSelectedBrokerId] = useState<string>("");
   const [deviceCount, setDeviceCount] = useState(0);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [isStorageExceeded, setIsStorageExceeded] = useState(false);
+
+  // Monitor de Armazenamento (Trava de Segurança)
+  useEffect(() => {
+    const checkStorage = async () => {
+      if (navigator.storage && navigator.storage.estimate) {
+        const { usage, quota } = await navigator.storage.estimate();
+        const TWO_GB = 2 * 1024 * 1024 * 1024;
+        const currentQuota = Math.min(quota || 0, TWO_GB);
+        
+        // Se usar mais de 98% dos 2GB, bloqueia.
+        if (usage && usage >= currentQuota * 0.98) {
+          setIsStorageExceeded(true);
+          setMqttConnectConfig(undefined); // DESCONECTA O MQTT
+        } else {
+          setIsStorageExceeded(false);
+        }
+      }
+    };
+
+    checkStorage();
+    const interval = setInterval(checkStorage, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Conexão MQTT Ativa
   const [mqttConnectConfig, setMqttConnectConfig] = useState<{
@@ -194,7 +218,19 @@ export function DashboardClient({ initialBrokers }: DashboardClientProps) {
               <StatsGrid stats={statsData} />
             </div>
 
-            {connectionError && (
+            {isStorageExceeded && (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3 shrink-0 animate-bounce">
+                <div className="text-amber-500 mt-1">🛑</div>
+                <div>
+                  <h3 className="text-sm font-bold text-amber-800">Conexão Suspensa por Segurança</h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Seu limite de 2GB de histórico foi atingido. Para continuar recebendo dados, limpe o histórico no widget de armazenamento abaixo.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {connectionError && !isStorageExceeded && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shrink-0">
                 <div className="text-red-500 mt-1">⚠️</div>
                 <div>
